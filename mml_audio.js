@@ -68,6 +68,9 @@ function tokenize(string) {
             } else if (c === "t") {
                 current_token.type = STATES.TEMPO;
                 state = STATES.TEMPO;
+            } else if (c === "v") {
+                current_token.type = STATES.VOLUME;
+                state = STATES.VOLUME;
             } else if (c in scale.notes) {
                 current_token.type = STATES.NOTE;
                 current_token.name = c;
@@ -107,15 +110,14 @@ function play_tokens(tokens) {
     var time_position = context.currentTime;
     var empty_note_length = DEFAULT_LENGTH;
     var whole_note = 4 * 60 / DEFAULT_TEMPO;
+    var volume = DEFAULT_VOLUME;
     for (var i=0;i<tokens.length;i++) {
-        //console.log(tokens[i]);
-        console.log(empty_note_length);
         switch (tokens[i].type) {
             case STATES.NOTE:
                 if (tokens[i].value === 0) {
                     tokens[i].value = empty_note_length;
                 }
-                play(scale.notes[tokens[i].name], time_position, whole_note / tokens[i].value);
+                play(scale.notes[tokens[i].name], time_position, whole_note / tokens[i].value, volume);
                 time_position += whole_note / tokens[i].value;
                 break;
             case STATES.REST:
@@ -143,6 +145,9 @@ function play_tokens(tokens) {
             case STATES.TEMPO:
                 whole_note = 4 * 60 / tokens[i].value;
                 break;
+            case STATES.VOLUME:
+                volume = tokens[i].value;
+                break;
             default:
                 console.log("Bad Token:");
                 console.log(tokens[i]);
@@ -159,9 +164,13 @@ function half_steps(frequency, steps) {
     return frequency * Math.pow(2, (steps/12));
 }
 
-function play(frequency, start, duration) {
+function play(frequency, start, duration, volume) {
     var osc = context.createOscillator();
-    osc.connect(context.destination);
+    var gain = context.createGain();
+    osc.connect(gain);
+    gain.connect(context.destination);
+    gain.gain.value = volume / 100;
+    //gain.gain.value = .1;
     osc.frequency.value = frequency;
     osc.noteOn(start);
     osc.noteOff(start + duration - INTER_NOTE);

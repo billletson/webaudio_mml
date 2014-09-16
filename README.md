@@ -9,8 +9,8 @@ Currently implemented:
 * Rests  
 * Octave changes  
 * Change of default note length  
-
-Not Implemented:  
 * Change of volume  
 * Change of tempo  
+
+Not Implemented:  
 * Tracks  
