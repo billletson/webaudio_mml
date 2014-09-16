@@ -8,9 +8,9 @@ Currently implemented:
 * Notes including sharps and flats  
 * Rests  
 * Octave changes  
+* Change of default note length  
 
 Not Implemented:  
-* Change of default note length  
 * Change of volume  
 * Change of tempo  
 * Tracks  
