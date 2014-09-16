@@ -6,10 +6,7 @@ var DEFAULT_OCTAVE = 4;
 var DEFAULT_TEMPO = 100;
 var DEFAULT_VOLUME = 100;
 var DEFAULT_LENGTH = 1;
-
-var empty_note_length = DEFAULT_LENGTH;
-var WHOLE_NOTE = 4*60/DEFAULT_TEMPO;
-var INTER_NOTE = WHOLE_NOTE / 64;
+var INTER_NOTE = (4 * 60) / (100*64);
 var STATES = { OPEN: -1, NOTE : 0, REST: 1, OCTAVE: 2, VOLUME: 3, TEMPO: 4, LENGTH: 5};
 var NOTES = {};
 NOTES['c'] = half_steps(BASE, -9);
@@ -71,7 +68,7 @@ function tokenize(string) {
             } else if (c === "t") {
                 current_token.type = STATES.TEMPO;
                 state = STATES.TEMPO;
-            } else if (c in NOTES) {
+            } else if (c in scale.notes) {
                 current_token.type = STATES.NOTE;
                 current_token.name = c;
                 state = STATES.NOTE;
@@ -108,6 +105,8 @@ function tokenize(string) {
 
 function play_tokens(tokens) {
     var time_position = context.currentTime;
+    var empty_note_length = DEFAULT_LENGTH;
+    var whole_note = 4 * 60 / DEFAULT_TEMPO;
     for (var i=0;i<tokens.length;i++) {
         //console.log(tokens[i]);
         console.log(empty_note_length);
@@ -116,11 +115,11 @@ function play_tokens(tokens) {
                 if (tokens[i].value === 0) {
                     tokens[i].value = empty_note_length;
                 }
-                play(NOTES[tokens[i].name], time_position, WHOLE_NOTE / tokens[i].value);
-                time_position += WHOLE_NOTE / tokens[i].value;
+                play(scale.notes[tokens[i].name], time_position, whole_note / tokens[i].value);
+                time_position += whole_note / tokens[i].value;
                 break;
             case STATES.REST:
-                time_position += WHOLE_NOTE / tokens[i].value;
+                time_position += whole_note / tokens[i].value;
                 break;
             case STATES.OCTAVE:
                 switch (tokens[i].name) {
@@ -140,6 +139,9 @@ function play_tokens(tokens) {
                 break;
             case STATES.LENGTH:
                 empty_note_length = tokens[i].value;
+                break;
+            case STATES.TEMPO:
+                whole_note = 4 * 60 / tokens[i].value;
                 break;
             default:
                 console.log("Bad Token:");
