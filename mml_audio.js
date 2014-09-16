@@ -68,6 +68,9 @@ function tokenize(string) {
         } else if (state === STATES.REST || state === STATES.NOTE || state === STATES.OCTAVE) {
             if (c === "+" || c === "-") {
                 current_token.name += c
+            } else if (c === ".") {
+                current_token.value = parseInt(numeric_string) / 1.5;
+                numeric_string = "";
             } else if (isNaN(c)) {
                 if(numeric_string) {
                     current_token.value = parseInt(numeric_string);
