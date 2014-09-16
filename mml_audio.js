@@ -6,7 +6,7 @@ var DEFAULT_OCTAVE = 4;
 var DEFAULT_TEMPO = 100;
 var DEFAULT_VOLUME = 100;
 var DEFAULT_LENGTH = 1;
-var INTER_NOTE = (4 * 60) / (100*64);
+var INTER_NOTE = 0.05;
 var STATES = { OPEN: -1, NOTE : 0, REST: 1, OCTAVE: 2, VOLUME: 3, TEMPO: 4, LENGTH: 5};
 var NOTES = {};
 NOTES['c'] = half_steps(BASE, -9);
@@ -169,11 +169,13 @@ function play(frequency, start, duration, volume) {
     var gain = context.createGain();
     osc.connect(gain);
     gain.connect(context.destination);
-    gain.gain.value = volume / 100;
-    //gain.gain.value = .1;
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(volume / 100, start + INTER_NOTE);
+    gain.gain.linearRampToValueAtTime(volume / 100, start + duration - INTER_NOTE);
+    gain.gain.linearRampToValueAtTime(0, start + duration);
     osc.frequency.value = frequency;
     osc.noteOn(start);
-    osc.noteOff(start + duration - INTER_NOTE);
+    osc.noteOff(start + duration + INTER_NOTE);
     osc.onended = function(osc) {osc.disconnect};
 }
 
