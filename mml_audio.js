@@ -157,7 +157,8 @@ function play_tokens(tokens) {
 }
 
 function play_string(string) {
-    play_tokens(tokenize(string));
+    var tracks_str = string.split(",");
+    tracks_str.map(tokenize).map(play_tokens);
 }
 
 function half_steps(frequency, steps) {

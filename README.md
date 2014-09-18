@@ -11,6 +11,5 @@ Currently implemented:
 * Change of default note length  
 * Change of volume  
 * Change of tempo  
-
-Not Implemented:  
 * Tracks  
+
