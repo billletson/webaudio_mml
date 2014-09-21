@@ -1,6 +1,7 @@
 "use strict";
 
 var context = new AudioContext();
+var oscillator_references = [];
 var BASE = 440;
 var DEFAULT_OCTAVE = 4;
 var DEFAULT_TEMPO = 100;
@@ -175,12 +176,21 @@ function play(frequency, start, duration, volume) {
     gain.gain.linearRampToValueAtTime(volume / 100, start + duration - INTER_NOTE);
     gain.gain.linearRampToValueAtTime(0, start + duration);
     osc.frequency.value = frequency;
-    osc.noteOn(start);
-    osc.noteOff(start + duration + INTER_NOTE);
-    osc.onended = function(osc) {osc.disconnect};
+    osc.start(start);
+    osc.stop(start + duration + INTER_NOTE);
+    osc.onended = function() {this.disconnect();console.log(oscillator_references);};
+    oscillator_references.push(osc);
+    console.log(oscillator_references);
 }
 
 function submit_MML(element_id) {
     var element = document.getElementById(element_id);
     play_string(element.value);
+}
+
+function stop_playback() {
+    for (var i=0;i<oscillator_references.length;i++) {
+        oscillator_references[i].disconnect();
+    }
+    oscillator_references = [];
 }
