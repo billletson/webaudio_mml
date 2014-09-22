@@ -41,21 +41,20 @@ var scale = {notes : NOTES,
 function Token(type, name, value) {
 	this.type = typeof type !== 'undefined' ? type : STATES.OPEN;
 	this.name = typeof name !== 'undefined' ? name : "";
-	this.value = typeof value !== 'undefined' ? value : 0;
+	this.value = typeof value !== 'undefined' ? value : "";
 }
 
 function tokenize(string) {
     var tokens = [];
     var current_token = new Token();
     var state = STATES.OPEN;
-    var numeric_string = "";
     for (var i=0; i<string.length; i++) {
         var c = string.charAt(i);
         if (state === STATES.OPEN) {
             if (c == ">") {
-                tokens.push(new Token(STATES.OCTAVE, "increment", 0));
+                tokens.push(new Token(STATES.OCTAVE, "increment", ""));
             } else if (c === "<") {
-                tokens.push(new Token(STATES.OCTAVE, "decrement", 0));
+                tokens.push(new Token(STATES.OCTAVE, "decrement", ""));
             } else if (c === "r") {
                 current_token.type = STATES.REST;
                 state = STATES.REST;
@@ -81,27 +80,24 @@ function tokenize(string) {
             if (c === "+" || c === "-") {
                 current_token.name += c
             } else if (c === ".") {
-                current_token.value = parseInt(numeric_string) / 1.5;
-                numeric_string = "";
-                state = STATES.OPEN;
-            } else if (isNaN(c)) {
-                if(numeric_string) {
-                    current_token.value = parseInt(numeric_string);
-                    numeric_string = "";
+                current_token.value += c;
+            } else if (c === "&") {
+                current_token.value += c;
+                i++; // The next character must be a note name, so skip it
+                if (string.charAt(i+1) === "+" || string.charAt(i+1) === "-") {
+                    i++;  // If the character after that is a sharp/flat, skip that too
                 }
+            } else if (isNaN(c)) {
                 tokens.push(current_token);
                 current_token = new Token();
                 i--; // Reprocess this character
                 state = STATES.OPEN;
             } else {
-                numeric_string += c;
+                current_token.value += c;
             }
         }
     }
     if(state !== STATES.OPEN) {
-        if (numeric_string) {
-            current_token.value = parseInt(numeric_string);
-        }
         tokens.push(current_token);
     }
     return tokens;
@@ -112,17 +108,16 @@ function play_tokens(tokens) {
     var empty_note_length = DEFAULT_LENGTH;
     var whole_note = 4 * 60 / DEFAULT_TEMPO;
     var volume = DEFAULT_VOLUME;
+    var start_time = time_position;
     for (var i=0;i<tokens.length;i++) {
         switch (tokens[i].type) {
             case STATES.NOTE:
-                if (tokens[i].value === 0) {
-                    tokens[i].value = empty_note_length;
-                }
-                play(scale.notes[tokens[i].name], time_position, whole_note / tokens[i].value, volume);
-                time_position += whole_note / tokens[i].value;
+                var length = whole_note * value_to_whole_notes(tokens[i].value, empty_note_length);
+                play(scale.notes[tokens[i].name], time_position, length, volume);
+                time_position += length;
                 break;
             case STATES.REST:
-                time_position += whole_note / tokens[i].value;
+                time_position += whole_note * value_to_whole_notes(tokens[i].value, empty_note_length);
                 break;
             case STATES.OCTAVE:
                 switch (tokens[i].name) {
@@ -133,7 +128,7 @@ function play_tokens(tokens) {
                         scale.decrement();
                         break;
                     case "set":
-                        scale.set_octave(tokens[i].value);
+                        scale.set_octave(parseInt(tokens[i].value));
                         break;
                     default:
                         console.log("Bad Token:");
@@ -141,20 +136,34 @@ function play_tokens(tokens) {
                 }
                 break;
             case STATES.LENGTH:
-                empty_note_length = tokens[i].value;
+                empty_note_length = parseInt(tokens[i].value);
                 break;
             case STATES.TEMPO:
-                whole_note = 4 * 60 / tokens[i].value;
+                whole_note = 4 * 60 / parseInt(tokens[i].value);
                 break;
             case STATES.VOLUME:
-                volume = tokens[i].value;
+                volume = parseInt(tokens[i].value);
                 break;
             default:
                 console.log("Bad Token:");
                 console.log(tokens[i]);
         }
+        
     }
     scale.set_octave(DEFAULT_OCTAVE);
+}
+
+function value_to_whole_notes(value, empty_note_length) {
+    var accumulator = 0;
+    var notes = value.split("&");
+    for (var i=0;i<notes.length;i++) {
+        var pieces = notes[i].split(".");
+        if (pieces[0] === "") {
+            pieces[0] = empty_note_length;
+        }
+        accumulator += (1 / parseInt(pieces[0])) * (0.5 + 0.5 * pieces.length); // Times 1.5 if dotted, 1 if not
+    }
+    return accumulator;
 }
 
 function play_string(string) {
@@ -178,9 +187,8 @@ function play(frequency, start, duration, volume) {
     osc.frequency.value = frequency;
     osc.start(start);
     osc.stop(start + duration + INTER_NOTE);
-    osc.onended = function() {this.disconnect();console.log(oscillator_references);};
+    osc.onended = function() {this.disconnect();};
     oscillator_references.push(osc);
-    console.log(oscillator_references);
 }
 
 function submit_MML(element_id) {
