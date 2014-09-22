@@ -8,7 +8,7 @@ var DEFAULT_TEMPO = 100;
 var DEFAULT_VOLUME = 100;
 var DEFAULT_LENGTH = 1;
 var INTER_NOTE = 0.05;
-var STATES = { OPEN: -1, NOTE : 0, REST: 1, OCTAVE: 2, VOLUME: 3, TEMPO: 4, LENGTH: 5};
+var STATES = { OPEN: -1, NOTE : 0, REST: 1, OCTAVE: 2, VOLUME: 3, TEMPO: 4, LENGTH: 5, TRACK: 6};
 var NOTES = {};
 NOTES['c'] = half_steps(BASE, -9);
 NOTES['c+'] = NOTES['d-'] = half_steps(BASE, -8);
@@ -75,6 +75,8 @@ function tokenize(string) {
                 current_token.type = STATES.NOTE;
                 current_token.name = c;
                 state = STATES.NOTE;
+            } else if (c === ",") {
+                tokens.push(new Token(STATES.TRACK, "", ""));
             }
         } else if (state !== STATES.OPEN) {
             if (c === "+" || c === "-") {
@@ -87,6 +89,11 @@ function tokenize(string) {
                 if (string.charAt(i+1) === "+" || string.charAt(i+1) === "-") {
                     i++;  // If the character after that is a sharp/flat, skip that too
                 }
+            } else if (c === ",") {
+                tokens.push(current_token);
+                tokens.push(new Token(STATES.TRACK));
+                current_token = new Token();
+                state = STATES.OPEN;
             } else if (isNaN(c)) {
                 tokens.push(current_token);
                 current_token = new Token();
@@ -144,12 +151,17 @@ function play_tokens(tokens) {
             case STATES.VOLUME:
                 volume = parseInt(tokens[i].value);
                 break;
+            case STATES.TRACK:
+                console.log(time_position - start_time);
+                time_position = start_time;
+                break;
             default:
                 console.log("Bad Token:");
                 console.log(tokens[i]);
         }
         
     }
+    console.log(time_position - start_time);
     scale.set_octave(DEFAULT_OCTAVE);
 }
 
@@ -167,8 +179,7 @@ function value_to_whole_notes(value, empty_note_length) {
 }
 
 function play_string(string) {
-    var tracks_str = string.split(",");
-    tracks_str.map(tokenize).map(play_tokens);
+    play_tokens(tokenize(string));
 }
 
 function half_steps(frequency, steps) {
