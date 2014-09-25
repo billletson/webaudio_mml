@@ -2,9 +2,10 @@
 
 var context = new AudioContext();
 var oscillator_references = [];
+var WAVEFORM = "square";
 var BASE = 440;
 var DEFAULT_OCTAVE = 4;
-var DEFAULT_TEMPO = 100;
+var DEFAULT_TEMPO = 120;
 var DEFAULT_VOLUME = 100;
 var DEFAULT_LENGTH = 4;
 var INTER_NOTE = 0.05;
@@ -189,6 +190,7 @@ function half_steps(frequency, steps) {
 function play(frequency, start, duration, volume) {
     var osc = context.createOscillator();
     var gain = context.createGain();
+    osc.type = WAVEFORM;
     osc.connect(gain);
     gain.connect(context.destination);
     gain.gain.setValueAtTime(0, start);
